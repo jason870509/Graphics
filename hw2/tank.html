@@ -136,7 +136,8 @@ var keys = [
   [0.5, pose5],
   [0.625, pose6],
   [0.875, pose7],
-  [1, pose8]
+  [0.9, pose8],
+[1, pose1]
 
   //[1, pose1]
 ];
@@ -161,15 +162,17 @@ function init() {
 
   let controls = new THREE.OrbitControls(camera, renderer.domElement);
 
+var cubeMap = loadCubemap();
+scene.background = cubeMap;
 
   var ambient = new THREE.AmbientLight(0x444444);
   scene.add(ambient);
   orbitcontrols = new THREE.OrbitControls(camera, renderer.domElement);
 
   gridxz = new THREE.GridHelper (200, 20,'red','white');
-  scene.add (gridxz);
+  //scene.add (gridxz);
   //gridxz.rotation.x = Math.PI / 2;
-  var directionalLight = new THREE.DirectionalLight(0xaaaaaa);
+  var directionalLight = new THREE.DirectionalLight(0xdddddd);
   directionalLight.position.set(0, 1, 0).normalize();
   scene.add(directionalLight);
 
@@ -204,6 +207,12 @@ function init() {
   //gui.add(gcontrol, 'headZ', -1.0, 1.0);
   /////////////////////////////////////////////////////////////////////
 	readModel();
+  let loader = new THREE.TextureLoader();
+  loader.crossOrigin = '';
+  texture = loader.load('https://i.imgur.com/mRMRm4q.jpg');
+  var plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshBasicMaterial({map:texture}));
+  //scene.add(plane)
+  plane.rotation.x = - Math.PI / 2
   //readModel2();
   
 }
@@ -569,7 +578,31 @@ function loadJSON() {
   "closed": false,
   "folders": {}
 }}
+function loadCubemap() {
 
+
+var path = "map/";
+var format = '.jpg';
+
+
+var urls = [
+    path + 'negx' + format, path + 'posx' + format,
+    path + 'posy' + format, path + 'negy' + format,
+    path + 'negz' + format, path + 'posz' + format
+];
+
+
+var loader = new THREE.CubeTextureLoader();
+
+
+loader.setCrossOrigin ('');
+var cubeMap = loader.load(urls);
+
+cubeMap.format = THREE.RGBFormat;
+
+return cubeMap;
+
+}
 </script>
 </body>
 
