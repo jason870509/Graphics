@@ -77,6 +77,7 @@ var speed, angle, vel;
 var clock;
 var tree = [], lastPosition;
 var tireAssembly = [], fronttire
+var frontBox, backBox;
 init();
 animate();
 
@@ -375,6 +376,13 @@ function init() {
   scene.add (gyro)
   gyro.add (camera2)
   
+  frontBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5), new THREE.MeshPhongMaterial({color:0xff0000, visible:false}));
+  backBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5), new THREE.MeshPhongMaterial({color:0x0000ff, visible:false}));
+  scene.add(frontBox, backBox)
+
+  backBox2 = new THREE.Mesh(new THREE.BoxGeometry(3,1,1), new THREE.MeshPhongMaterial({color:0xff0000}));
+  backBox3 = backBox2.clone();
+  // scene.add(backBox2)
 }
 
 function readModel (targetSize=40) {
@@ -408,7 +416,7 @@ function readModel (targetSize=40) {
       theObject.children[0].children[i].receiveShadow = true;
     }
     
-    console.log(new THREE.BoxHelper (theObject))
+    //console.log(new THREE.BoxHelper (theObject))
     theObject.rotation.z = -Math.PI / 2
     theObject.rotation.x = -Math.PI / 2
     //console.log(theObject)
@@ -456,6 +464,7 @@ function animate() {
   orbitcontrols.update();
   if(theObject !== undefined){
       if(first){
+
         theObject.castShadow = true;
         theObject.receiveShadow = true;  
         directionLight.target = theObject;
@@ -471,13 +480,27 @@ function animate() {
         tireAssembly[2].position.set(6, 15, 11);
         tireAssembly[3].position.set(-7, 15, 11);
         fronttire.add(tireAssembly[2], tireAssembly[3])
-        theObject.add(fronttire)
+        theObject.add(fronttire, backBox2, backBox3)
+        backBox2.position.y = -15
+        backBox2.position.z = 16.5
+        backBox2.position.x = -6
+        backBox3.position.y = -15
+        backBox3.position.z = 16.5
+        backBox3.position.x = 3      
+        //backBox.position.y = -40
         first = 0;
       }
       var cameraPos = theObject.localToWorld(new THREE.Vector3(0, -50, 40))
+      var boxPos = theObject.localToWorld(new THREE.Vector3(0, 20, 20))
+      var boxPos2 = theObject.localToWorld(new THREE.Vector3(0, -20, 20))
+      //var boxPos3 = theObject.localToWorld(new THREE.Vector3(-5, -15, 16))
       //camera1.position.set(theObject.position.x, 10, theObject.position.z);
       camera1.position.copy(cameraPos);
       camera1.lookAt(theObject.position);
+      frontBox.position.copy(boxPos)
+      backBox.position.copy(boxPos2)
+      //backBox2.position.copy(boxPos3)
+
       //camera2.position.copy(cameraPos);
       //camera1.position.copy(theObject.position)
       //camera2.lookAt(theObject.position);
@@ -498,12 +521,28 @@ function animate() {
       
 
       R = new Box2()
+      if(speed < 0){
+        backBox2.material.emissiveIntensity = 1
+        backBox2.material.emissive = new THREE.Color(0xff0000);    
+      }
+      else{
+        backBox2.material.emissiveIntensity = 0
+      }
       //console.log(tree[0].geometry.parameters.radiusTop)
       for(i=0;i<tree.length;i++){
         if (coordinateOrigin(theObject, R, tree[i].position, tree[i].geometry.parameters.radiusTop) != 0){
           tree[i].material.emissiveIntensity = 1
           tree[i].material.emissive = new THREE.Color(0xff0000);
-          speed = -10
+
+
+          dis1 = Math.pow((frontBox.position.x - tree[i].position.x),2) + Math.pow((frontBox.position.y - tree[i].position.y),2) + Math.pow((frontBox.position.z - tree[i].position.z),2);
+
+          dis2 = Math.pow((backBox.position.x - tree[i].position.x),2) + Math.pow((backBox.position.y - tree[i].position.y),2) + Math.pow((backBox.position.z - tree[i].position.z),2);
+          console.log(dis1, dis2);
+          if(dis1 > dis2)
+            speed = 10
+          else 
+            speed = -10
           
           theObject.position.copy(pos);
         }
