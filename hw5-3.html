@@ -47,7 +47,6 @@ body {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script>
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-<script src="http://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/geometries/TeapotBufferGeometry.js"></script>
 
@@ -240,7 +239,6 @@ var angle = 0;
 var pointLight;
 var teapotMaterial;
 var pickables = [];
-var keyboard = new KeyboardState();
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 var stopLife = [];
@@ -308,25 +306,22 @@ function init() {
 }
 
 function animate() {
-  keyboard.update();
+	angle += 0.01;
 
-  if (keyboard.down("Z")) turn = !turn;    
-  if (turn) angle += 0.01;
-
-  pointLight.position.set(50 * Math.cos(angle), 50, 50 * Math.sin(angle));
+	pointLight.position.set(50 * Math.cos(angle), 50, 50 * Math.sin(angle));
 
 
-  for (i = 0; i < teapots.length; i++) {
-    if (stopLife[i] != 1) {
-      teapots[i].update();
-      teapots[i].teapotMaterial.uniforms.lightpos.value.copy (pointLight.position);
-    }
+	for (i = 0; i < teapots.length; i++) {
+		if (stopLife[i] != 1) {
+		  teapots[i].update();
+		  teapots[i].teapotMaterial.uniforms.lightpos.value.copy (pointLight.position);
+		}
 
-  }
+	}
 
-  $('#teapotNumber').text("Number of teapot : " + (scene.children.length - 7)); //console.log(pickables.length)
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+	$('#teapotNumber').text("Number of teapot : " + (scene.children.length - 7)); //console.log(pickables.length)
+	requestAnimationFrame(animate);
+	renderer.render(scene, camera);
 
 }
 
