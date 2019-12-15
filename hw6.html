@@ -497,30 +497,38 @@ var drawer2 = new THREE.Mesh(new THREE.SphereGeometry(3), new THREE.MeshPhongMat
 
 
 function animate() {
-	requestAnimationFrame(animate);
+requestAnimationFrame(animate);
   renderer.setRenderTarget (renderTarget);
   renderer.clear();  // clear the buffers of render target 
-	
-  sceneGrey.traverse ( function (obj) {
+	sceneGrey.traverse ( function (obj) {
   	if (obj instanceof THREE.Mesh)
   		obj.material.colorWrite = true;
   });
-	renderer.render(sceneGrey, camera);
-  
-  // switch to screen output    
+  renderer.render(sceneGrey, camera);
   renderer.setRenderTarget (null);
   renderer.clearColor();  // clear screen buffers
-  renderer.render(scene0, camera0);
+	renderer.render(scene0, camera0);
+
+  // switch to screen output    
+
   // set up blockers from sceneGrey (colorWrite is disabled)
   //normalMat.colorWrite = false;
+  renderer.setRenderTarget (renderTarget);
   sceneGrey.traverse ( function (obj) {
   	if (obj instanceof THREE.Mesh)
   		obj.material.colorWrite = false;
-  });
-  renderer.render (sceneGrey, camera);
+  });  
+	
+ // renderer.clear();  // clear the buffers of render target 
+	  
   
   // render sceneColor
+  renderer.render (sceneGrey, camera);
+  
+  renderer.setRenderTarget (null);
+  
   renderer.render(sceneColor, camera);
+  
   
   
 }
