@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        
+        #info {
+            position: absolute;
+            top: 2%;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            color: #ffff00
+        }
+        
+        #info a,
+        .button {
+            color: #f00;
+            font-weight: bold;
+            text-decoration: underline;
+            cursor: pointer
+        }
+    </style>
+</head>
+
+<body>
+    <div id="info">
+        <a href="http://threejs.org" target="_blank">three.js</a> - OBJLoader + MTLLoader
+        <br>
+        <button id="toggle" style="width:20%">Camera Change</button>
+    </div>
+
+
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js">
+    </script>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+    <script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+    <script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js">
+    </script>
+    <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/misc/Gyroscope.js"></script>
+
+
+    <script>
+        var camera, scene, renderer, camera1, camera2, change = 0;
+        var cameraHUD, directionLight;
+        var gyro;
+        var first = 1;
+        var mouseX = 0,
+            mouseY = 0;
+        var keyboard = new KeyboardState();
+        var windowHalfX = window.innerWidth / 2;
+        var windowHalfY = window.innerHeight / 2;
+        var controls;
+        var bs;
+        var modelName;
+        var theModel;
+        var angle = [],
+            x1 = [],
+            y1 = [];
+        var gcontrols, orbitcontrols;
+        var pointLight;
+        var car = [],
+            num = 0;
+        var theObject;
+        var pos = new THREE.Vector3();
+        var speed, angle, vel;
+        var clock;
+        var tree = [],
+            lastPosition;
+        var tireAssembly = [],
+            fronttire
+        var frontBox, backBox;
+        init();
+        animate();
+
+        $("#toggle").click(function() {
+            if (change == 1) change = 0
+            else change++;
+        });
+        (function() {
+            Math.clamp = function(val, min, max) {
+                return Math.min(Math.max(val, min), max);
+            }
+        })();
+        class Box2 {
+            constructor() {
+                this.max = new THREE.Vector3()
+                this.min = new THREE.Vector3()
+            }
+        }
+
+
+
+        function init() {
+            clock = new THREE.Clock();
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+            renderer.setClearColor(0x888888);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+            camera1 = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+            camera1.position.z = 100;
+            camera1.position.y = 100;
+            camera2 = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+            camera2.position.z = 40;
+            camera2.position.y = 30;
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            cameraHUD = new THREE.OrthographicCamera(-200, 200, 100, -100, 1, 500);
+            cameraHUD.position.set(0, 450, 0)
+            cameraHUD.up.set(0, 0, -1) // for top view
+            cameraHUD.lookAt(new THREE.Vector3())
+            speed = 0.0;
+            angle = 0.0;
+
+
+
+            //camera2 = 
+            // scene
+
+            scene = new THREE.Scene();
+            let loader = new THREE.TextureLoader();
+            loader.crossOrigin = '';
+            let backgroundTex = loader.load('https://i.imgur.com/SorcAi1.jpg');
+            scene.background = backgroundTex;
+            var ambient = new THREE.AmbientLight(0x444444);
+            //scene.add(ambient);
+            orbitcontrols = new THREE.OrbitControls(camera1, renderer.domElement);
+
+            gridxz = new THREE.GridHelper(200, 20, 'red', 'white');
+            //scene.add (gridxz);
+            gridxz.position.y = 8
+
+            let groundTex = loader.load('https://i.imgur.com/NYbq8dD.jpg');
+            groundTex.repeat.set(14, 14);
+            groundTex.wrapS = THREE.RepeatWrapping;
+            groundTex.wrapT = THREE.RepeatWrapping;
+            var plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
+                map: groundTex,
+                side: THREE.DoubleSide
+            }));
+            scene.add(plane);
+            plane.position.y = 7.9
+            plane.rotation.x = -Math.PI / 2
+            plane.receiveShadow = true;
+            //gridxz.rotation.x = Math.PI / 2;
+            directionLight = new THREE.DirectionalLight(0xffffff);
+            directionLight.position.set(-180, 160, -180);
+            directionLight.castShadow = true;
+            directionLight.shadow.camera.left = -180;
+            directionLight.shadow.camera.top = -180;
+            directionLight.shadow.camera.right = 180;
+            directionLight.shadow.camera.bottom = 180;
+            directionLight.shadow.camera.near = 1;
+            directionLight.shadow.camera.far = 1500;
+
+            directionLight.shadow.mapSize.width = directionLight.shadow.mapSize.height = 1024;
+            scene.add(directionLight, /*new THREE.DirectionalLightHelper(directionLight,5),new THREE.CameraHelper(directionLight.shadow.camera) */ );
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
+            pointLight = new THREE.PointLight(0xffffff);
+            pointLight.position.set(-100, 300, -300);
+            //scene.add (pointLight);
+            //let sphereSize = 3;
+            //let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
+            //scene.add(pointLightHelper);
+            window.addEventListener('resize', onWindowResize, false);
+
+
+
+            function onWindowResize() {
+
+                windowHalfX = window.innerWidth / 2;
+                windowHalfY = window.innerHeight / 2;
+
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+            }
+            readModel();
+            // renderer.autoClear = false;
+            ////////////////////////////////////////////////////////////////////////////
+
+
+            tireAssembly[0] = new THREE.Object3D();
+            fronttire = new THREE.Object3D();
+            let treadTex = loader.load('models/tex.jpg');
+            treadTex.repeat.set(6, 1)
+            treadTex.wrapS = THREE.RepeatWrapping
+            let treadMat = new THREE.MeshPhongMaterial({
+                map: treadTex,
+                side: THREE.DoubleSide
+            });
+
+            let geometry = new THREE.CylinderGeometry(4, 4, 3, 80, 2, true)
+            let tread = new THREE.Mesh(geometry, treadMat);
+            // parameters need to be set in initial instantiation  
+            tireAssembly[0].add(tread)
+
+            let tireTex = loader.load('models/tire.png');
+            let tireMat = new THREE.MeshPhongMaterial({
+                map: tireTex,
+                transparent: true,
+                side: THREE.DoubleSide
+            })
+            let tire = new THREE.Mesh(new THREE.CircleGeometry(4, 80), tireMat)
+            let tire1 = tire.clone();
+            tireAssembly[0].add(tire1)
+            tire1.rotation.x = -Math.PI / 2;
+            tire1.position.y = 1.5
+            let tire2 = tire.clone();
+            tire2.rotation.x = Math.PI / 2
+            tire2.position.y = -1.5
+            tireAssembly[0].add(tire2)
+
+            //tireAssembly.rotation.x = Math.PI / 2
+            tireAssembly[0].position.y = 4
+                //tireAssembly.scale.set(1.1, 1.1, 1.1)
+
+            ////////////////////////////////////////////////////////////////////////////
+            tree[0] = new THREE.Mesh(new THREE.CylinderGeometry(25, 25, 20, 32), new THREE.MeshPhongMaterial({
+                color: 0xff0000
+            }));
+            scene.add(tree[0]);
+            tree[0].position.set(25, 18, 50)
+            tree[1] = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 100, 32), new THREE.MeshPhongMaterial({
+                color: 0x333333
+            }));
+            scene.add(tree[1]);
+            tree[1].position.set(-25, 58, -50)
+            tree[2] = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 50, 32), new THREE.MeshPhongMaterial({
+                color: 0xff00ff
+            }));
+            scene.add(tree[2]);
+            tree[2].position.set(-50, 33, 50)
+            for (i = 0; i < tree.length; i++) {
+                tree[i].castShadow = true;
+                tree[i].receiveShadow = true;
+            }
+
+            ////////////////////////////////////////////////////////////////////////////
+            var railGeometry = new THREE.RingBufferGeometry(45, 85, 30, 2, 0, 3.14);
+            texture2 = loader.load('https://i.imgur.com/c1dswCQ.jpg');
+            var railGeometry2 = new THREE.RingBufferGeometry(45, 85, 30, 2, 0, 1.57);
+            texture2 = loader.load('https://i.imgur.com/c1dswCQ.jpg');
+            var railGeometry3 = new THREE.RingBufferGeometry(10, 50, 30, 2, 0, 3.14);
+            texture2 = loader.load('https://i.imgur.com/c1dswCQ.jpg');
+            var railGeometry4 = new THREE.RingBufferGeometry(5, 45, 30, 2, 0, 3.14);
+            texture2 = loader.load('https://i.imgur.com/c1dswCQ.jpg');
+            var uvs = railGeometry.attributes.uv.array;
+            texture1 = loader.load('https://i.imgur.com/c1dswCQ.jpg');
+            var phiSegments = railGeometry.parameters.phiSegments; // 62
+            var thetaSegments = railGeometry.parameters.thetaSegments; // 1
+            for (var c = 0, j = 0; j <= phiSegments; j++) {
+                for (var i = 0; i <= thetaSegments; i++) {
+                    uvs[c++] = i / thetaSegments * 2,
+                        uvs[c++] = j / phiSegments;
+                }
+            }
+            var uvs2 = railGeometry2.attributes.uv.array;
+            var phiSegments2 = railGeometry2.parameters.phiSegments; // 62
+            var thetaSegments2 = railGeometry2.parameters.thetaSegments; // 1
+            for (var c = 0, j = 0; j <= phiSegments2; j++) {
+                for (var i = 0; i <= thetaSegments2; i++) {
+                    uvs2[c++] = i / thetaSegments2,
+                        uvs2[c++] = j / phiSegments2;
+                }
+            }
+            var uvs3 = railGeometry3.attributes.uv.array;
+            var phiSegments3 = railGeometry3.parameters.phiSegments; // 62
+            var thetaSegments3 = railGeometry3.parameters.thetaSegments; // 1
+            for (var c = 0, j = 0; j <= phiSegments3; j++) {
+                for (var i = 0; i <= thetaSegments3; i++) {
+                    uvs3[c++] = i / thetaSegments3,
+                        uvs3[c++] = j / phiSegments3;
+                }
+            }
+            var uvs4 = railGeometry4.attributes.uv.array;
+            var phiSegments4 = railGeometry4.parameters.phiSegments; // 62
+            var thetaSegments4 = railGeometry4.parameters.thetaSegments; // 1
+            for (var c = 0, j = 0; j <= phiSegments4; j++) {
+                for (var i = 0; i <= thetaSegments4; i++) {
+                    uvs4[c++] = i / thetaSegments4,
+                        uvs4[c++] = j / phiSegments4;
+                }
+            }
+            texture1.wrapS = THREE.RepeatWrapping
+
+            var railMaterial = new THREE.MeshPhongMaterial({
+                map: texture1,
+                side: THREE.DoubleSide
+            });
+            var allRoad = new THREE.Object3D,
+                turn = []
+            turn[0] = new THREE.Mesh(railGeometry, railMaterial);
+            turn[1] = new THREE.Mesh(railGeometry2, railMaterial);
+            turn[2] = turn[1].clone();
+            turn[3] = turn[1].clone();
+            turn[4] = turn[1].clone();
+            turn[5] = new THREE.Mesh(railGeometry3, railMaterial);
+            turn[6] = turn[5].clone();
+            turn[7] = turn[5].clone();
+            turn[8] = new THREE.Mesh(railGeometry4, railMaterial);
+            turn[8].rotation.x = -Math.PI / 2
+            turn[8].position.set(-90, 8, -30)
+            turn[7].rotation.x = Math.PI / 2
+            turn[7].position.set(-145, 8, -30)
+            turn[6].rotation.x = -Math.PI / 2
+            turn[6].position.set(-205, 8, -130)
+            turn[5].rotation.x = Math.PI / 2
+            turn[5].position.set(-265, 8, -30)
+            turn[4].position.set(-230, 8, -230)
+            turn[4].rotation.x = -Math.PI / 2
+            turn[4].rotation.z = Math.PI / 2
+            turn[3].position.set(-130, 8, -230)
+            turn[3].rotation.x = -Math.PI / 2
+            turn[2].rotation.x = Math.PI / 2
+            turn[2].rotation.y = Math.PI
+            turn[2].position.set(0, 8, -230)
+
+
+            //turn4.rotation.z = Math.PI / 2
+            turn[1].position.set(0, 8, -100)
+            turn[1].rotation.x = Math.PI / 2
+            turn[1].rotation.z = -Math.PI / 2
+            turn[0].rotation.x = Math.PI / 2
+            turn[0].position.y = 8
+            var plane = [];
+            plane[0] = new THREE.Mesh(new THREE.PlaneGeometry(100, 40), new THREE.MeshPhongMaterial({
+                map: texture2,
+                side: THREE.DoubleSide
+            }));
+            plane[1] = plane[0].clone();
+            plane[2] = plane[0].clone();
+            plane[3] = plane[0].clone();
+            plane[4] = plane[0].clone();
+            plane[5] = plane[0].clone();
+            plane[6] = new THREE.Mesh(new THREE.PlaneGeometry(30, 40), new THREE.MeshPhongMaterial({
+                map: texture2,
+                side: THREE.DoubleSide
+            }));
+            plane[6].rotation.x = -Math.PI / 2
+            plane[6].rotation.z = -Math.PI / 2
+            plane[6].position.set(-65, 8, -15)
+            plane[5].rotation.x = -Math.PI / 2
+            plane[5].rotation.z = -Math.PI / 2
+            plane[5].position.set(-175, 8, -80)
+            plane[4].rotation.x = -Math.PI / 2
+            plane[4].rotation.z = -Math.PI / 2
+            plane[4].position.set(-235, 8, -80)
+            plane[3].rotation.x = -Math.PI / 2
+            plane[3].rotation.z = -Math.PI / 2
+            plane[3].position.set(-295, 8, -80)
+            plane[2].rotation.x = -Math.PI / 2
+            plane[2].rotation.z = -Math.PI / 2
+            plane[2].position.set(-295, 8, -180)
+            plane[1].rotation.x = -Math.PI / 2
+            plane[1].position.set(-180, 8, -295)
+            plane[0].rotation.z = Math.PI / 2
+            plane[0].rotation.x = -Math.PI / 2
+            plane[0].position.set(65, 8, -50)
+            for (i = 0; i < 9; i++) {
+                if (i < 7) {
+                    allRoad.add(plane[i]);
+                    plane[i].receiveShadow = true;
+                }
+                allRoad.add(turn[i]);
+                turn[i].receiveShadow = true;
+            }
+            //scene.add(plane2)
+            allRoad.position.set(0, 0, 50)
+
+            scene.add(allRoad)
+
+            gyro = new THREE.Gyroscope();
+            scene.add(gyro)
+            gyro.add(camera2)
+
+            frontBox = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshPhongMaterial({
+                color: 0xff0000,
+                visible: false
+            }));
+            backBox = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshPhongMaterial({
+                color: 0x0000ff,
+                visible: false
+            }));
+            scene.add(frontBox, backBox)
+
+            backBox2 = new THREE.Mesh(new THREE.BoxGeometry(3, 1, 1), new THREE.MeshPhongMaterial({
+                color: 0xff0000
+            }));
+            backBox3 = backBox2.clone();
+            // scene.add(backBox2)
+        }
+
+        function readModel(targetSize = 40) {
+
+            var onProgress = function(xhr) {
+                if (xhr.lengthComputable) {
+                    var percentComplete = xhr.loaded / xhr.total * 100;
+                    console.log(Math.round(percentComplete, 2) + '% downloaded');
+                }
+            };
+
+            var onError = function(xhr) {};
+
+            var mtlLoader = new THREE.MTLLoader();
+            mtlLoader.setPath('models/');
+            mtlLoader.load('WartHog.mtl', function(materials) {
+
+                materials.preload();
+
+                var objLoader = new THREE.OBJLoader();
+                objLoader.setMaterials(materials);
+                objLoader.setPath('models/');
+                objLoader.load('WartHog.obj', function(object) {
+
+                    theObject = unitize(object, targetSize);
+                    //theObject.add ( new THREE.BoxHelper (theObject) )
+                    theObject.name = 'OBJ'
+                    scene.add(theObject);
+                    for (i = 0; i < 13; i++) {
+                        theObject.children[0].children[i].castShadow = true;
+                        theObject.children[0].children[i].receiveShadow = true;
+                    }
+
+                    //console.log(new THREE.BoxHelper (theObject))
+                    theObject.rotation.z = -Math.PI / 2
+                    theObject.rotation.x = -Math.PI / 2
+                        //console.log(theObject)
+                        //theObject.position.y = -50
+                }, onProgress, onError);
+
+            });
+
+        }
+
+
+        ////////////////////////////////////////
+        // wrap an Object3D around the given object
+        // so that it is centered at +Y axis
+        // 
+        function unitize(object, targetSize) {
+
+            // find bounding box of 'object'
+            var box3 = new THREE.Box3();
+            box3.setFromObject(object);
+            var size = new THREE.Vector3();
+            size.subVectors(box3.max, box3.min);
+            var center = new THREE.Vector3();
+            center.addVectors(box3.max, box3.min).multiplyScalar(0.5);
+
+            console.log('center: ' + center.x + ', ' + center.y + ', ' + center.z);
+            console.log('size: ' + size.x + ', ' + size.y + ', ' + size.z);
+
+            // uniform scaling according to objSize
+            var objSize = Math.max(size.x, size.y, size.z);
+            var scaleSet = targetSize / objSize;
+
+            var theObject1 = new THREE.Object3D();
+            theObject1.add(object);
+            object.scale.set(scaleSet, scaleSet, scaleSet);
+
+            //object.position.set (-center.x*scaleSet, -center.y*scaleSet+5, -center.z*scaleSet);
+
+            return theObject1;
+
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            orbitcontrols.update();
+            if (theObject !== undefined) {
+                if (first) {
+
+                    theObject.castShadow = true;
+                    theObject.receiveShadow = true;
+                    directionLight.target = theObject;
+                    theObject.add(gyro)
+                    theObject.add(tireAssembly[0]);
+                    tireAssembly[0].position.set(7, -10, 11)
+                    tireAssembly[0].rotation.z = Math.PI / 2
+                    for (i = 1; i < 4; i++) {
+                        tireAssembly[i] = tireAssembly[0].clone();
+                        theObject.add(tireAssembly[i]);
+                    }
+                    tireAssembly[1].position.set(-8, -10, 11);
+                    tireAssembly[2].position.set(6, 15, 11);
+                    tireAssembly[3].position.set(-7, 15, 11);
+                    fronttire.add(tireAssembly[2], tireAssembly[3])
+                    theObject.add(fronttire, backBox2, backBox3)
+                    backBox2.position.y = -15
+                    backBox2.position.z = 16.5
+                    backBox2.position.x = -6
+                    backBox3.position.y = -15
+                    backBox3.position.z = 16.5
+                    backBox3.position.x = 3
+                        //backBox.position.y = -40
+                    first = 0;
+                }
+                var cameraPos = theObject.localToWorld(new THREE.Vector3(0, -50, 40))
+                var boxPos = theObject.localToWorld(new THREE.Vector3(0, 20, 20))
+                var boxPos2 = theObject.localToWorld(new THREE.Vector3(0, -20, 20))
+                    //var boxPos3 = theObject.localToWorld(new THREE.Vector3(-5, -15, 16))
+                    //camera1.position.set(theObject.position.x, 10, theObject.position.z);
+                camera1.position.copy(cameraPos);
+                camera1.lookAt(theObject.position);
+                frontBox.position.copy(boxPos)
+                backBox.position.copy(boxPos2)
+                    //backBox2.position.copy(boxPos3)
+
+                //camera2.position.copy(cameraPos);
+                //camera1.position.copy(theObject.position)
+                //camera2.lookAt(theObject.position);
+                //theObject.position.set(60 * Math.cos(angle), 10, -60 * Math.sin(angle));
+                //theObject.rotation.z = angle;
+                //angle += 0.01;
+                //cameraHUD.position.set (theObject.position.x, 80,theObject.position.z)
+                //cameraHUD.up.set (0,0,-1)
+                cameraHUD.lookAt(theObject.position)
+                var dt = clock.getDelta();
+                update(dt);
+
+                var localPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -15);
+                theObject.children[0].children[6].material.clippingPlanes = [localPlane]
+                for (i = 0; i < 4; i++) {
+                    tireAssembly[i].rotation.x += -speed;
+                }
+
+
+                R = new Box2()
+                if (speed < 0) {
+                    backBox2.material.emissiveIntensity = 1
+                    backBox2.material.emissive = new THREE.Color(0xff0000);
+                } else {
+                    backBox2.material.emissiveIntensity = 0
+                }
+                //console.log(tree[0].geometry.parameters.radiusTop)
+                for (i = 0; i < tree.length; i++) {
+                    if (coordinateOrigin(theObject, R, tree[i].position, tree[i].geometry.parameters.radiusTop) != 0) {
+                        tree[i].material.emissiveIntensity = 1
+                        tree[i].material.emissive = new THREE.Color(0xff0000);
+
+
+                        dis1 = Math.pow((frontBox.position.x - tree[i].position.x), 2) + Math.pow((frontBox.position.y - tree[i].position.y), 2) + Math.pow((frontBox.position.z - tree[i].position.z), 2);
+
+                        dis2 = Math.pow((backBox.position.x - tree[i].position.x), 2) + Math.pow((backBox.position.y - tree[i].position.y), 2) + Math.pow((backBox.position.z - tree[i].position.z), 2);
+                        console.log(dis1, dis2);
+                        if (dis1 > dis2)
+                            speed = 10
+                        else
+                            speed = -10
+
+                        theObject.position.copy(pos);
+                    } else {
+                        theObject.position.copy(pos);
+                        theObject.rotation.z = -Math.PI / 2 + angle;
+                        //tree[i].material.color = new THREE.Color('gray');
+                        //tree[i].material.emissive = new THREE.Color("black");
+                        tree[i].material.emissiveIntensity = 0
+                    }
+                }
+                //theObject.position.z = 20
+                lastPosition = theObject.position
+            }
+            renderer.localClippingEnabled = true;
+            render();
+
+        }
+
+        function render() {
+            if (change == 0)
+                camera = camera1;
+            else
+                camera = camera2;
+            var WW = window.innerWidth;
+            var HH = window.innerHeight;
+
+            renderer.setScissorTest(true);
+
+            renderer.setViewport(0, 0, WW, HH);
+            camera.aspect = WW / HH;
+            camera.updateProjectionMatrix();
+
+            renderer.setScissor(0, 0, WW, HH);
+            renderer.clear();
+            renderer.render(scene, camera);
+
+            renderer.setViewport(WW * 4 / 5, HH * 2 / 3, WW / 4, HH / 4);
+            renderer.setScissor(WW * 4 / 5, HH * 2 / 3, WW / 4, HH / 4);
+            // no need to set aspect (since it is still ONE)
+            renderer.clear(); // important!
+            renderer.render(scene, cameraHUD); // border
+
+
+
+            //   // for top view
+
+            renderer.setScissorTest(false);
+            //renderer.render(scene, camera);
+
+        }
+
+        function update(dt) {
+            keyboard.update();
+            for (var i = 0; i < 4; i++) {
+                //wheels[i].rotation.y = 0
+            }
+            if (keyboard.pressed("left")) {
+                angle += 0.01;
+                for (i = 2; i < 4; i++) {
+                    fronttire.rotation.z = 0.1;
+                }
+            } else if (keyboard.pressed("right")) {
+                angle -= 0.01;
+                for (i = 2; i < 4; i++) {
+                    fronttire.rotation.z = -0.1;
+                }
+            } else {
+                for (i = 2; i < 4; i++) {
+                    fronttire.rotation.z = 0;
+                }
+            }
+
+            if (keyboard.pressed("up")) {
+                speed += 0.5;
+            } else {
+                if (speed > 0)
+                    speed -= 0.5
+            }
+
+            if (keyboard.pressed("down")) {
+                speed -= 0.5;
+            } else {
+                if (speed < 0)
+                    speed += 0.5
+            }
+
+
+            if (keyboard.pressed("space"))
+                speed = 0
+            if (keyboard.pressed("home"))
+                speed = 0.1
+            speed = Math.clamp(speed, -30.0, 30.0);
+            vel = new THREE.Vector3(speed, 0, 0);
+
+            vel.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+            pos.add(vel.clone().multiplyScalar(dt));
+
+        }
+
+        function check_Intersection(r, c, rad) {
+            r.max.x = 42 / 2
+            r.max.y = 20 / 2
+            r.min.x = r.max.x * -1
+            r.min.y = r.max.y * -1
+            var rad2 = rad * rad
+            r.max.x -= c.x
+            r.max.y -= c.y
+            r.min.x -= c.x
+            r.min.y -= c.y
+                //console.log(r)
+            if (r.max.x < 0) {
+                if (r.max.y < 0) { //left down  1
+                    if (((r.max.x * r.max.x + r.max.y * r.max.y) < rad2))
+                        return 1
+                    return 0
+                } else if (r.min.y > 0) { //left up  2
+                    if (((r.max.x * r.max.x + r.min.y * r.min.y) < rad2))
+                        return 2
+                    return 0
+                        //return ((r.max.x * r.max.x + r.min.y * r.min.y) < rad2)
+                } else { //left  3
+                    if ((Math.abs(r.max.x) < rad))
+                        return 3
+                    return 0
+                        //return (Math.abs(r.max.x) < rad)
+                }
+            } else if (r.min.x > 0) {
+                if (r.max.y < 0) { //right down  4
+                    if (((r.min.x * r.min.x + r.max.y * r.max.y) < rad2))
+                        return 4
+                    return 0
+                        //return ((r.min.x * r.min.x + r.max.y * r.max.y) < rad2)
+                } else if (r.min.y > 0) { //right up  5
+                    if (((r.min.x * r.min.x + r.min.y * r.min.y) < rad2))
+                        return 5
+                    return 0
+                        //return ((r.min.x * r.min.x + r.min.y * r.min.y) < rad2)
+                } else { //right  6
+                    if ((r.min.x < rad))
+                        return 6
+                    return 0
+                        //return (r.min.x < rad)
+                }
+            } else {
+                if (r.max.y < 0) { //center down  7
+                    if ((Math.abs(r.max.y) < rad))
+                        return 7
+                    return 0
+                        //return (Math.abs(r.max.y) < rad)
+                } else if (r.min.y > 0) { //center up  8
+                    if ((r.min.y < rad))
+                        return 8
+                    return 0
+                        //return (r.min.y < rad)
+                } else //center
+                    return 9
+                    //return true
+            }
+
+        }
+
+        function coordinateOrigin(recMesh, r, c, rad) {
+            r.max.x = 42 / 2
+            r.max.y = 22 / 2
+            r.min.x = r.max.x * -1
+            r.min.y = r.max.y * -1
+            var center = recMesh.position.clone()
+
+            var normalMat = new THREE.Matrix3().getNormalMatrix(recMesh.matrixWorld);
+
+            var xR = new THREE.Vector3(0, 1, 0)
+            xR.applyMatrix3(normalMat).normalize()
+            var yR = new THREE.Vector3(1, 0, 0)
+            yR.applyMatrix3(normalMat).normalize()
+            var cSubr = c.clone().sub(center)
+            var tmpC = new THREE.Vector3()
+            tmpC.x = cSubr.clone().dot(xR)
+            tmpC.y = cSubr.clone().dot(yR)
+
+            var res = check_Intersection(r, tmpC, rad)
+
+            return res
+        }
+    </script>
+</body>
+
+</html>
