@@ -22,36 +22,103 @@
 <body>
     <div id="info">
         hw5-1 Basic GLSL <br>
-
+      
         <select id='coords'>
-    <option value="obj" selected>Object Coordinate</option>
-    <option value="world">World Coordinate</option>
-    <option value="eye">Eye Coordinate</option>
-  </select>
-
+            <option value="obj" selected>Object Coordinate</option>
+            <option value="world">World Coordinate</option>
+            <option value="eye">Eye Coordinate</option>
+        </select>
+        
         <select id='shading'>
-    <option value='perVertex' selected> Per Vertex</option>
-    <option value='perPixel'> Per Pixel </option>
-  </select>
+            <option value='perVertex' selected> Per Vertex</option>
+            <option value='perPixel'> Per Pixel </option>
+        </select>
     </div>
-
+      
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script>
     <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/geometries/TeapotBufferGeometry.js"></script>
-
+    
     <script id="myVertexShader" type="x-shader/x-vertex">
-        uniform int shading; uniform int coordinate; varying vec3 color; varying vec3 mypos; varying vec4 eyepos; varying vec4 worldpos; void perVertexShading(vec3 objpos, vec3 worldpos) { vec4 eyepos = modelViewMatrix * vec4 (position, 1.0); if (coordinate ==
-        0) { if (objpos.x > 0.0) color = vec3 (1,1,1); else color = vec3 (0,0,0); } else if (coordinate == 1) { if (worldpos.x > 0.0) color = vec3 (1,1,1); else color = vec3 (0,0,0); } else if (coordinate == 2){ if(eyepos.x > 0.0) color = vec3 (1,1,1);
-        else color = vec3 (0,0,0); } } void main() { mypos = position; gl_Position = projectionMatrix* modelViewMatrix * vec4( position, 1.0); worldpos = modelMatrix * vec4 (position, 1.0); eyepos = modelViewMatrix * vec4 (position, 1.0); if (shading
-        == 0) // per-vertex shading perVertexShading(position, worldpos.xyz); }
+    uniform int shading;
+    uniform int coordinate;
+    varying vec3 color;	
+    varying vec3 mypos;
+    varying vec4 eyepos;
+    varying vec4 worldpos;
+    
+    void perVertexShading(vec3 objpos, vec3 worldpos) {
+        vec4 eyepos = modelViewMatrix * vec4 (position, 1.0);
+        if (coordinate == 0) {
+            if (objpos.x > 0.0) 
+                color = vec3 (1,1,1);
+        else
+                color = vec3 (0,0,0);
+        } else if (coordinate == 1) {
+            if (worldpos.x > 0.0) 
+                color = vec3 (1,1,1);
+        else
+                color = vec3 (0,0,0);    	
+        } else if (coordinate == 2){
+            if(eyepos.x > 0.0)
+            color = vec3 (1,1,1);
+        else 
+            color = vec3 (0,0,0);
+        }
+    }
+        
+    void main() {
+        mypos = position;
+            gl_Position = projectionMatrix* modelViewMatrix * vec4( position, 1.0);
+        worldpos = modelMatrix * vec4 (position, 1.0);
+        eyepos = modelViewMatrix * vec4 (position, 1.0);
+        
+        if (shading == 0)  // per-vertex shading
+            perVertexShading(position, worldpos.xyz);
+            
+    }
     </script>
-
+    
     <script id="myFragmentShader" type="x-shader/x-fragment">
-        uniform int coordinate; uniform int shading; varying vec3 color; varying vec3 mypos; varying vec4 eyepos; varying vec4 worldpos; void perPixelShading(vec3 objpos, vec3 worldpos, vec3 mycolor) { if (coordinate == 0) { if (objpos.x > 0.0) mycolor = vec3
-        (1,1,1); else mycolor = vec3 (0,0,0); } else if (coordinate == 1) { if (worldpos.x > 0.0) mycolor = vec3 (1,1,1); else mycolor = vec3 (0,0,0); } else if (coordinate == 2){ if(eyepos.x > 0.0) mycolor = vec3 (1,1,1); else mycolor = vec3 (0,0,0);
-        } gl_FragColor = vec4 (mycolor, 1.0); } void main() { vec3 mycolor; if(shading == 0){ gl_FragColor = vec4 (color, 1.0); } else { perPixelShading(mypos, worldpos.xyz, mycolor); } }
+    uniform int coordinate;
+    uniform int shading;
+    varying vec3 color;
+    varying vec3 mypos;
+    varying vec4 eyepos;
+    varying vec4 worldpos;
+    
+        void perPixelShading(vec3 objpos, vec3 worldpos, vec3 mycolor) {
+        if (coordinate == 0) {
+            if (objpos.x > 0.0) 
+                mycolor = vec3 (1,1,1);
+        else
+                mycolor = vec3 (0,0,0);
+        } else if (coordinate == 1) {
+            if (worldpos.x > 0.0) 
+                mycolor = vec3 (1,1,1);
+        else
+                mycolor = vec3 (0,0,0);    	
+        } else if (coordinate == 2){
+            if(eyepos.x > 0.0)
+            mycolor = vec3 (1,1,1);
+        else 
+            mycolor = vec3 (0,0,0);
+        }
+        gl_FragColor = vec4 (mycolor, 1.0);
+    }
+    
+        void main() {
+        vec3 mycolor;
+        if(shading == 0){
+                gl_FragColor = vec4 (color, 1.0);   
+        }	else {
+            perPixelShading(mypos, worldpos.xyz, mycolor);      
+        }  	
+        }
     </script>
+      
+      
 
 
 
